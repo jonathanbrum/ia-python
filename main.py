@@ -47,59 +47,86 @@ cost = np.array([])
 
 # Arquitetura da rede
 
-n_neurons_input_layer = 2
-n_neurons_hidden_layer_1 = 5
-n_neurons_hidden_layer_2 = 3
-n_neurons_output_layer = 1
+n_neurons_input_layer = X[0].size
+n_neurons_hidden_layer = [5,3]
+n_neurons_output_layer = Y[0].size
 
 # Pesos
-
-w_hidden_layer_1 = np.random.rand(n_neurons_input_layer, n_neurons_hidden_layer_1)
-print(w_hidden_layer_1)
-
-w_hidden_layer_2 = np.random.rand(n_neurons_hidden_layer_1, n_neurons_hidden_layer_2)
-print(w_hidden_layer_2)
-
-w_output_layer = np.random.rand(n_neurons_hidden_layer_2, n_neurons_output_layer)
-print(w_output_layer)
+index = 0
+w_hidden_layer = []
+w_hidden_layer.append(np.random.rand(n_neurons_input_layer, n_neurons_hidden_layer[index]))
+for neurons_hidden_layer in n_neurons_hidden_layer:
+    if index == 0:
+        index += 1
+        continue
+    w_hidden_layer.append(np.random.rand(n_neurons_hidden_layer[index - 1], neurons_hidden_layer))
+    index += 1
+print('w_hidden_layer',w_hidden_layer)
+w_output_layer = np.random.rand(n_neurons_hidden_layer[index - 1], n_neurons_output_layer)
+print('w_output_layer',w_output_layer)
 
 # Vieses
-
-b_hidden_layer_1 = np.zeros(n_neurons_hidden_layer_1)
-print(b_hidden_layer_1)
-
-b_hidden_layer_2 = np.zeros(n_neurons_hidden_layer_2)
-print(b_hidden_layer_2)
-
+index = 0
+b_hidden_layer = []
+for neurons_hidden_layer in n_neurons_hidden_layer:
+    b_hidden_layer.append(np.zeros(neurons_hidden_layer))
+    print('b_hidden_layer[',index,']: ',b_hidden_layer[index])
+    index = index + 1
 b_output_layer = np.zeros(n_neurons_output_layer)
-print(b_output_layer)
+print('b_output_layer',b_output_layer)
 
 # Treino da rede
 i = 0
 _cost = 1
+# delta_hidden_layer = np.zeros(len(n_neurons_hidden_layer))
+delta_hidden_layer = np.zeros((4,3))
 while ((_cost > 0.0005) & (i <= EPOCHS)):
-    activation_hidden_layer_1 = np.dot(X, w_hidden_layer_1) + b_hidden_layer_1
-    activation_hidden_layer_2 = np.dot(sigmoid(activation_hidden_layer_1), w_hidden_layer_2) + b_hidden_layer_2
-    activation_output_layer = np.dot(sigmoid(activation_hidden_layer_2), w_output_layer) + b_output_layer
+    index = 0
+    activation_hidden_layer = []
+    activation_hidden_layer.append(np.dot(X, w_hidden_layer[index]) + b_hidden_layer[index])
+    for neurons_hidden_layer in n_neurons_hidden_layer:
+        if index == 0:
+            index += 1
+            continue
+        activation_hidden_layer.append(np.dot(sigmoid(activation_hidden_layer[index - 1]), w_hidden_layer[index]) + b_hidden_layer[index])
+        index += 1
+    activation_output_layer = np.dot(sigmoid(activation_hidden_layer[index - 1]), w_output_layer) + b_output_layer
     
     _cost = MSE(Y, sigmoid(activation_output_layer))
     cost = np.append(cost, _cost)
 
+    index = len(n_neurons_hidden_layer) - 1
     delta_output_layer = (Y - sigmoid(activation_output_layer)) * sigmoid_derivative(activation_output_layer)
-    delta_hidden_layer_2 = np.dot(delta_output_layer, w_output_layer.T) * sigmoid_derivative(activation_hidden_layer_2)
-    delta_hidden_layer_1 = np.dot(delta_hidden_layer_2, w_hidden_layer_2.T) * sigmoid_derivative(activation_hidden_layer_1)
+    print(delta_hidden_layer,index)
+    print(delta_hidden_layer[index],np.dot(delta_output_layer, w_output_layer.T) * sigmoid_derivative(activation_hidden_layer[index]))
+    delta_hidden_layer[index] = np.dot(delta_output_layer, w_output_layer.T) * sigmoid_derivative(activation_hidden_layer[index])
     
-    w_output_layer += N * np.dot(sigmoid(activation_hidden_layer_2).T, delta_output_layer)
-    w_hidden_layer_2 += N * np.dot(sigmoid(activation_hidden_layer_1).T, delta_hidden_layer_2)
-    w_hidden_layer_1 += N * np.dot(X.T, delta_hidden_layer_1)
-    
-    i = i+1
+    for neurons_hidden_layer in n_neurons_hidden_layer:
+        if index == len(n_neurons_hidden_layer)- 1:
+            continue
+        delta_hidden_layer.insert(0,np.dot(delta_hidden_layer[index + 1], w_hidden_layer[index + 1].T) * sigmoid_derivative(activation_hidden_layer[index]))
+        index -= 1    
 
-print(w_hidden_layer_1)
-print(w_hidden_layer_2)
+    index = len(n_neurons_hidden_layer) - 1
+    w_output_layer += N * np.dot(sigmoid(activation_hidden_layer[index]).T, delta_output_layer)
+    print(w_hidden_layer[index])
+    print(sigmoid(activation_hidden_layer[index - 1]).T)
+    print(delta_hidden_layer,index)
+    print(delta_hidden_layer[index])
+    print(N * np.dot(sigmoid(activation_hidden_layer[index - 1]).T, delta_hidden_layer[index]))
+    w_hidden_layer[index] += N * np.dot(sigmoid(activation_hidden_layer[index - 1]).T, delta_hidden_layer[index])
+
+    for neurons_hidden_layer in n_neurons_hidden_layer:
+        if index == n_neurons_hidden_layer.size - 1:
+            continue        
+        w_hidden_layer[index] += N * np.dot(X.T, delta_hidden_layer[index])
+        index -= 1    
+    
+    i += 1
+
+print(w_hidden_layer)
 print(w_output_layer)
-print(b_hidden_layer_1)
-print(b_hidden_layer_2)
+print(b_hidden_layer)
 print(b_output_layer)
 # Gráfico da função de custo
 
