@@ -1,3 +1,4 @@
+import operator as op
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -7,7 +8,7 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 def sigmoid_derivative(x):
-    return x * (1 - x)
+    return sigmoid(x) * (1 - sigmoid(x))
 
 # Função de custo
 
@@ -74,22 +75,32 @@ b_output_layer = np.zeros(n_neurons_output_layer)
 print(b_output_layer)
 
 # Treino da rede
+i = 0
+_cost = 1
+while ((_cost > 0.0005) & (i <= EPOCHS)):
+    activation_hidden_layer_1 = np.dot(X, w_hidden_layer_1) + b_hidden_layer_1
+    activation_hidden_layer_2 = np.dot(sigmoid(activation_hidden_layer_1), w_hidden_layer_2) + b_hidden_layer_2
+    activation_output_layer = np.dot(sigmoid(activation_hidden_layer_2), w_output_layer) + b_output_layer
+    
+    _cost = MSE(Y, sigmoid(activation_output_layer))
+    cost = np.append(cost, _cost)
 
-for epoch in range(EPOCHS):
-    activation_hidden_layer_1 = sigmoid(np.dot(X, w_hidden_layer_1) + b_hidden_layer_1)
-    activation_hidden_layer_2 = sigmoid(np.dot(activation_hidden_layer_1, w_hidden_layer_2) + b_hidden_layer_2)
-    activation_output_layer = sigmoid(np.dot(activation_hidden_layer_2, w_output_layer) + b_output_layer)
-    
-    cost = np.append(cost, MSE(Y, activation_output_layer))
-    
-    delta_output_layer = (Y - activation_output_layer) * sigmoid_derivative(activation_output_layer)
+    delta_output_layer = (Y - sigmoid(activation_output_layer)) * sigmoid_derivative(activation_output_layer)
     delta_hidden_layer_2 = np.dot(delta_output_layer, w_output_layer.T) * sigmoid_derivative(activation_hidden_layer_2)
     delta_hidden_layer_1 = np.dot(delta_hidden_layer_2, w_hidden_layer_2.T) * sigmoid_derivative(activation_hidden_layer_1)
     
-    w_output_layer += N * np.dot(activation_hidden_layer_2.T, delta_output_layer)
-    w_hidden_layer_2 += N * np.dot(activation_hidden_layer_1.T, delta_hidden_layer_2)
+    w_output_layer += N * np.dot(sigmoid(activation_hidden_layer_2).T, delta_output_layer)
+    w_hidden_layer_2 += N * np.dot(sigmoid(activation_hidden_layer_1).T, delta_hidden_layer_2)
     w_hidden_layer_1 += N * np.dot(X.T, delta_hidden_layer_1)
+    
+    i = i+1
 
+print(w_hidden_layer_1)
+print(w_hidden_layer_2)
+print(w_output_layer)
+print(b_hidden_layer_1)
+print(b_hidden_layer_2)
+print(b_output_layer)
 # Gráfico da função de custo
 
 plt.plot(cost)
